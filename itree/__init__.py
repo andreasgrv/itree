@@ -11,12 +11,8 @@ class ITree(object):
     this object is usable as a node object but has access to more information
     about the actual tree through the tree instance variable"""
 
-    # TODO will anyone want to create an empty ITree??
-    def __init__(self, root_data):
-        self.sibling_index = 0
-        self.tree = ITreeMatrix(levels=1)
-        self.level_index = 0
-        self.tree.set_root(root_data)
+    def __init__(self):
+        self.tree = ITreeMatrix()
 
     def __getattr__(self, name):
         return getattr(self.tree, name)
@@ -33,6 +29,9 @@ class ITree(object):
     def __len__(self):
         return len(self.tree)
 
+    def append_child(self, data):
+        child = self.tree.set_root(data)
+        return child
 
 class AugmentedITreeNode(object):
 

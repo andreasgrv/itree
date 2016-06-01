@@ -173,11 +173,13 @@ class ITreeMatrix(object):
         # suppose root node exists and we change the value
         try:
             self.get_node(0, 0).data = data
+            root = self[0][0]
         except IndexError:
             # node doesn't exist so we create it
             # the parent of root is outside the matrix
             # using -1 here lets us use append_child as if (-1, -1) existed
-            self.append_child(data, -1, -1)
+            root = self.append_child(data, -1, -1)
+        return root
 
     def append_child(self, data, parent_row, parent_column):
         """append child to row that contains its siblings and cousins"""
