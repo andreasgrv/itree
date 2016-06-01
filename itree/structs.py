@@ -1,24 +1,18 @@
-import collections
 from itree import AugmentedITreeNode, ITreeError
 
 
 class ITreeNode(object):
 
-    """Docstring for ITreeNode. """
+    """itree node representation. we wrap the data in the node and keep indices
+    to the parent, the first child and the last child. we dont need two
+    indices, since we can figure out the depth of the parent and children nodes
+    by searching one level higher and one level lower than the current node
+    accordingly"""
 
-    def __init__(self, data, parent_index=-1, children_indices=None):
-        """TODO: to be defined1.
-
-        :parent_index: TODO
-        :children_indices: TODO
-
-        """
+    def __init__(self, data, parent_index=-1):
         self.data = data
         self.parent_index = parent_index
-        self.children_indices = children_indices or []
-        if not(isinstance(self.children_indices, collections.MutableSequence)):
-            raise TypeError('children_indices must be a mutable '
-                            'sequence of indices')
+        self._first_child_index = self._last_child_index = None
 
     def __repr__(self):
         return str(self.data)
@@ -26,24 +20,42 @@ class ITreeNode(object):
     def __str__(self):
         return str(self.data)
 
+    @property
+    def children_indices(self):
+        if self._first_child_index is None:
+            # empty range
+            return range(0)
+        return range(self._first_child_index, self._last_child_index + 1)
+
+    def removed_sibling(self):
+        """call me if you removed left sibling"""
+        if self._first_child_index is not None:
+            self._first_child_index -= 1
+            self._last_child_index -= 1
+
     def append_child(self, sibling_index):
-        self.children_indices.append(sibling_index)
+        if self._first_child_index is None:
+            self._first_child_index = self._last_child_index = sibling_index
+        else:
+            assert(sibling_index == self._last_child_index + 1)
+            self._last_child_index += 1
 
     def remove_child(self, sibling_index):
         """remove child with value sibling_index, since we don't want to have
         gaps in our indices, after a child removal we need to decrement the
-        indices of its siblings which were to its right.
+        indices of the indices of its siblings.
 
         :sibling_index: TODO
         :returns: TODO
 
         """
-        removal_index = self.children_indices.index(sibling_index)
-        self.children_indices.pop(removal_index)
-        # since the sibling_index must be a consecutive number with no gaps
-        # we need to lower the indices by one for all the succeeding nodes
-        for index in range(removal_index, len(self.children_indices)):
-            self.children_indices[index] -= 1
+        if sibling_index in self.children_indices:
+            if sibling_index == self._first_child_index:
+                self._first_child_index = self._last_child_index = None
+            else:
+                self._last_child_index -= 1
+        else:
+            raise ITreeError('child with index: %s not found' % sibling_index)
 
 
 class ITreeRow(list):
@@ -107,8 +119,10 @@ class ITreeRow(list):
 
         """
         self[parent_index].node.remove_child(child_index)
+        # since the sibling_index must be a consecutive number with no gaps
+        # we need to lower the indices by one for all the succeeding nodes
         for parent_node in self[parent_index+1:]:
-            parent_node.children_indices = [each-1 for each in parent_node.children_indices]
+            parent_node.removed_sibling()
 
 
 class ITreeMatrix(object):
