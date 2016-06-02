@@ -14,9 +14,6 @@ class ITree(object):
     def __init__(self):
         self.tree = ITreeMatrix()
 
-    def __getattr__(self, name):
-        return getattr(self.tree, name)
-
     def __getitem__(self, index):
         return self.tree[index]
 
@@ -29,12 +26,38 @@ class ITree(object):
     def __len__(self):
         return len(self.tree)
 
-    def append_child(self, data):
+    @property
+    def height(self):
+        """get distance from root to lowest leaf"""
+        self.tree.height
+
+    @property
+    def root(self):
+        """get this tree's root"""
+        return self.tree.root
+
+    @property
+    def children(self):
+        """get children nodes"""
+        return self.tree.root.children
+
+    def set_root(self, data):
+        """creates and appends the root of the tree."""
         child = self.tree.set_root(data)
         return child
 
-    def to_multilevel_list(self):
+    def append_child(self, data):
+        """creates and appends the root of the tree - alias for set_root.
+        exists to follow naming convention with nodes to assist in cases
+        where recursion is required"""
+        child = self.tree.set_root(data)
+        return child
+
+    def to_nested_list(self):
+        """convert this itree to a nested list"""
+
         def collapse_one_level(l):
+            """collapses contained lists of a list once (not recursive)"""
             for each in l:
                 if isinstance(each, list):
                     for other in each:
@@ -42,26 +65,29 @@ class ITree(object):
                 else:
                     yield each
 
-        def recursively_append(node):
+        def recursively_nest(node):
+            """recurse into tree and nest children on the right of
+            the parent in a list"""
             if node.children:
-                print('%s has children : %s' % (node, node.children))
                 current = [node.data]
-                c = list(collapse_one_level(map(recursively_append, node.children)))
-                current.append(c)
-                print(current)
+                nested_children = map(recursively_nest, node.children)
+                children = list(collapse_one_level(nested_children))
+                current.append(children)
                 return current
             else:
                 return node.data
-        return recursively_append(self.root)
+
+        return recursively_nest(self.root)
 
     @classmethod
-    def from_multilevel_list(cls, multi_list):
+    def from_nested_list(cls, multi_list):
+        """create an itree from a nested list"""
         def recursively_append(l, node):
             child = None
             for index in range(len(l)):
                 data = l[index]
                 # next data point (first item never a list in a valid tree)
-                next_data = l[(index+1)%len(l)]
+                next_data = l[(index+1) % len(l)]
                 # if we find a list, it means the previous node
                 # has the list nodes as children
                 # we keep a reference to the previous node (child)
@@ -69,9 +95,9 @@ class ITree(object):
                 # at least once if this is a valid tree representation
                 if isinstance(data, list):
                     if child is None:
-                        raise ValueError('this multi list cannot be a tree')
+                        raise ITreeError('this multi list cannot be a tree')
                     if isinstance(next_data, list):
-                        raise ValueError('this multi list cannot be a tree, '
+                        raise ITreeError('this multi list cannot be a tree, '
                                          'it contains two consecutive lists')
                     recursively_append(data, child)
                 else:
@@ -84,12 +110,12 @@ class ITree(object):
                         node.append_child(data)
 
         if len(multi_list) > 2:
-            raise ValueError('this list represents a bush not a tree '
+            raise ITreeError('this list represents a bush not a tree '
                              ' - it has many roots')
         t = ITree()
         recursively_append(multi_list, t)
         return t
-        
+
 
 class AugmentedITreeNode(object):
 
@@ -110,13 +136,31 @@ class AugmentedITreeNode(object):
         self.tree = tree
 
     def __repr__(self):
-        return '%s : (%s, %s)' % (self.node, self.level_index, self.sibling_index)
+        return '%s at (%s, %s)' % (self.node,
+                                   self.level_index,
+                                   self.sibling_index)
 
     def __str__(self):
-        return '%s : (%s, %s)' % (self.node, self.level_index, self.sibling_index)
+        return '%s at (%s, %s)' % (self.node,
+                                   self.level_index,
+                                   self.sibling_index)
 
     def __getitem__(self, index):
         return self.tree[index]
+
+    @property
+    def index(self):
+        return (self.level_index, self.sibling_index)
+
+    @property
+    def height(self):
+        """how far from the root this node is"""
+        return (self.level_index)
+
+    @property
+    def width(self):
+        """how far from the farmost left node this node is"""
+        return (self.sibling_index)
 
     @property
     def node(self):
@@ -160,12 +204,12 @@ class AugmentedITreeNode(object):
         self.tree.remove_node(self.level_index, self.sibling_index)
 
 
-from structs import ITreeMatrix, ITreeNode
+from itree.structs import ITreeMatrix
 
 if __name__ == "__main__":
-    l = [1,[3,[20, [4,10],5,[2, [6]],3, [3]]]]
-    i = ITree.from_multilevel_list(l)
-    r = i.to_multilevel_list()
-    print('correct: %s' % l)
-    print(r)
-    print(r==l)
+    l = [1, [3, [20, [4, 10], 5, [2, [6]], 3, [3]]]]
+    i = ITree.from_nested_list(l)
+    r = i.to_nested_list()
+    print('correct:     %s' % l)
+    print('constructed: %s' % r)
+    print(r == l)
