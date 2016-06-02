@@ -134,6 +134,20 @@ class AugmentedITreeNode(object):
         self.level_index = level_index
         self.sibling_index = sibling_index
         self.tree = tree
+        # append all non private stuff to augmented node
+        for key, value in self.node.data.__class__.__dict__.items():
+            if not key.startswith('_'):
+                if key in self.__class__.__dict__:
+                    setattr(self.__class__, '_%s' % key, value)
+                else:
+                    setattr(self.__class__, key, value)
+        # append all non private variables to augmented node
+        for key, value in self.node.data.__dict__.items():
+            if not key.startswith('_'):
+                if key in self.__dict__:
+                    setattr(self, '_%s' % key, value)
+                else:
+                    setattr(self, key, value)
 
     def __repr__(self):
         return '%s at (%s, %s)' % (self.node,
@@ -195,6 +209,7 @@ class AugmentedITreeNode(object):
         :returns: TODO
 
         """
+        pass
 
     def delete(self):
         """TODO: Docstring for delete.
