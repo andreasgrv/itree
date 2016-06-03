@@ -1,8 +1,5 @@
 """ itree api """
-
-
-class ITreeError(Exception):
-    pass
+from structs import ITreeMatrix, ITreeError
 
 
 class ITree(object):
@@ -14,8 +11,18 @@ class ITree(object):
     def __init__(self):
         self.tree = ITreeMatrix()
 
-    def __getitem__(self, index):
-        return self.tree[index]
+    def __getitem__(self, indices):
+        level_index, sibling_index = indices
+        # check it exists
+        self.tree[level_index][sibling_index]
+        return AugmentedITreeNode(level_index, sibling_index, self.tree)
+
+    def __call__(self, *indices):
+        assert len(indices) == 2, 'expecting 2 indices, height and width'
+        level_index, sibling_index = indices[:2]
+        # check it exists
+        self.tree[level_index][sibling_index]
+        return AugmentedITreeNode(level_index, sibling_index, self.tree)
 
     def __repr__(self):
         return repr(self.tree)
@@ -34,7 +41,9 @@ class ITree(object):
     @property
     def root(self):
         """get this tree's root"""
-        return self.tree.root
+        # check it exists
+        self.tree.root
+        return AugmentedITreeNode(0, 0, self.tree)
 
     @property
     def children(self):
@@ -43,15 +52,15 @@ class ITree(object):
 
     def set_root(self, data):
         """creates and appends the root of the tree."""
-        child = self.tree.set_root(data)
-        return child
+        level_index, sibling_index = self.tree.set_root(data)
+        return AugmentedITreeNode(level_index, sibling_index, self.tree)
 
     def append_child(self, data):
         """creates and appends the root of the tree - alias for set_root.
         exists to follow naming convention with nodes to assist in cases
         where recursion is required"""
-        child = self.tree.set_root(data)
-        return child
+        level_index, sibling_index = self.tree.set_root(data)
+        return AugmentedITreeNode(level_index, sibling_index, self.tree)
 
     def to_nested_list(self):
         """convert this itree to a nested list"""
@@ -135,19 +144,22 @@ class AugmentedITreeNode(object):
         self.sibling_index = sibling_index
         self.tree = tree
         # append all non private stuff to augmented node
-        for key, value in self.node.data.__class__.__dict__.items():
-            if not key.startswith('_'):
-                if key in self.__class__.__dict__:
-                    setattr(self.__class__, '_%s' % key, value)
-                else:
-                    setattr(self.__class__, key, value)
-        # append all non private variables to augmented node
-        for key, value in self.node.data.__dict__.items():
-            if not key.startswith('_'):
-                if key in self.__dict__:
-                    setattr(self, '_%s' % key, value)
-                else:
-                    setattr(self, key, value)
+        try:
+            for key, value in self.node.data.__class__.__dict__.items():
+                if not key.startswith('_'):
+                    if key in self.__class__.__dict__:
+                        setattr(self.__class__, '_%s' % key, value)
+                    else:
+                        setattr(self.__class__, key, value)
+            # append all non private variables to augmented node
+            for key, value in self.node.data.__dict__.items():
+                if not key.startswith('_'):
+                    if key in self.__dict__:
+                        setattr(self, '_%s' % key, value)
+                    else:
+                        setattr(self, key, value)
+        except Exception:
+            pass
 
     def __repr__(self):
         return '%s at (%s, %s)' % (self.node,
@@ -159,8 +171,18 @@ class AugmentedITreeNode(object):
                                    self.level_index,
                                    self.sibling_index)
 
-    def __getitem__(self, index):
-        return self.tree[index]
+    def __call__(self, *indices):
+        assert len(indices) == 2, 'expecting 2 indices, height and width'
+        level_index, sibling_index = indices[:2]
+        # check it exists
+        self.tree[level_index][sibling_index]
+        return AugmentedITreeNode(level_index, sibling_index, self.tree)
+
+    def __getitem__(self, indices):
+        level_index, sibling_index = indices
+        # check it exists
+        self.tree[level_index][sibling_index]
+        return AugmentedITreeNode(level_index, sibling_index, self.tree)
 
     @property
     def index(self):
@@ -178,7 +200,7 @@ class AugmentedITreeNode(object):
 
     @property
     def node(self):
-        return self.tree.get_node(self.level_index, self.sibling_index)
+        return self.tree[self.level_index][self.sibling_index]
 
     @property
     def data(self):
@@ -186,21 +208,23 @@ class AugmentedITreeNode(object):
 
     @property
     def children(self):
-        return [self.tree[self.level_index + 1][sibling_index]
+        return [AugmentedITreeNode(self.level_index+1, sibling_index, self.tree)
                 for sibling_index in self.node.children_indices]
 
     @property
     def parent(self):
         parent_index = self.node.parent_index
-        return self.tree[self.level_index - 1][parent_index]
+        return AugmentedITreeNode(self.level_index-1, parent_index, self.tree)
 
     @property
     def siblings(self):
-        return self.tree[self.level_index]
+        pass
+        # return self.tree[self.level_index]
 
     def append_child(self, data):
-        child = self.tree.append_child(data, self.level_index, self.sibling_index)
-        return child
+        args = (data, self.level_index, self.sibling_index)
+        level_index, sibling_index = self.tree.append_child(*args)
+        return AugmentedITreeNode(level_index, sibling_index, self.tree)
 
     def add_sibling(self, data):
         """TODO: Docstring for append_child.
@@ -219,8 +243,6 @@ class AugmentedITreeNode(object):
         self.tree.remove_node(self.level_index, self.sibling_index)
 
 
-from itree.structs import ITreeMatrix
-
 if __name__ == "__main__":
     l = [1, [3, [20, [4, 10], 5, [2, [6]], 3, [3]]]]
     i = ITree.from_nested_list(l)
@@ -228,3 +250,5 @@ if __name__ == "__main__":
     print('correct:     %s' % l)
     print('constructed: %s' % r)
     print(r == l)
+    print(i(2, 2).append_child('blue'))
+    print(i)
