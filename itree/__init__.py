@@ -8,8 +8,8 @@ class ITree(object):
     this object is usable as a node object but has access to more information
     about the actual tree through the tree instance variable"""
 
-    def __init__(self):
-        self.tree = ITreeMatrix()
+    def __init__(self, tree=None):
+        self.tree = tree or ITreeMatrix()
 
     def __getitem__(self, indices):
         level_index, sibling_index = indices
@@ -18,7 +18,6 @@ class ITree(object):
         return AugmentedITreeNode(level_index, sibling_index, self.tree)
 
     def __call__(self, *indices):
-        assert len(indices) == 2, 'expecting 2 indices, height and width'
         level_index, sibling_index = indices[:2]
         # check it exists
         self.tree[level_index][sibling_index]
@@ -48,7 +47,7 @@ class ITree(object):
     @property
     def children(self):
         """get children nodes"""
-        return self.tree.root.children
+        return self.root.children
 
     def set_root(self, data):
         """creates and appends the root of the tree."""
@@ -130,7 +129,7 @@ class AugmentedITreeNode(object):
 
     """API for ITree structure - I tried to focus on simplicity of use.
     this object is usable as a node object but has access to more information
-    about the actual tree through the tree instance variable"""
+    about the actual tree through the tree variable - reference"""
 
     def __init__(self, level_index, sibling_index, tree):
         """TODO: to be defined1.
@@ -172,7 +171,6 @@ class AugmentedITreeNode(object):
                                    self.sibling_index)
 
     def __call__(self, *indices):
-        assert len(indices) == 2, 'expecting 2 indices, height and width'
         level_index, sibling_index = indices[:2]
         # check it exists
         self.tree[level_index][sibling_index]
@@ -246,6 +244,7 @@ class AugmentedITreeNode(object):
 if __name__ == "__main__":
     l = [1, [3, [20, [4, 10], 5, [2, [6]], 3, [3]]]]
     i = ITree.from_nested_list(l)
+    i[0, 0]
     r = i.to_nested_list()
     print('correct:     %s' % l)
     print('constructed: %s' % r)

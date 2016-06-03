@@ -1,4 +1,5 @@
-from itree import AugmentedITreeNode, ITreeError
+class ITreeError(Exception):
+    pass
 
 
 class ITreeNode(object):
@@ -63,7 +64,7 @@ class ITreeRow(list):
     """A row of the ITreeMatrix which represents a level of the tree,
     all nodes at same height or depth are on the same level."""
 
-    def __init__(self, level, tree):
+    def __init__(self, level):
         """TODO: to be defined1.
 
         :level: TODO
@@ -71,22 +72,12 @@ class ITreeRow(list):
 
         """
         self.level = level
-        self.tree = tree
-
-    def __getitem__(self, index):
-        # call to super get item throws index error
-        # if this call isn't allowed
-        super(ITreeRow, self).__getitem__(index)
-        return AugmentedITreeNode(self.level, index, self.tree)
 
     def __setitem__(self, index, item):
         """ allow setting node data with setter,
         this bypasses setting the node - we can't allow that anyways
         since it could break the tree structure"""
         self[index].data = item
-
-    def get_node(self, index):
-        return super(ITreeRow, self).__getitem__(index)
 
     def append_child(self, data, parent_column):
         """ append data as node next to its siblings, namely next to the nodes
@@ -103,13 +94,7 @@ class ITreeRow(list):
                 sibling_index = len(self) - index
                 break
         self.insert(sibling_index, child)
-        # remember to add child to the parents children list
-        # if the node has parents - negative indices correspond to no parents
-        parent_level = self.level - 1
-        if parent_level >= 0:
-            parent = self.tree.get_node(self.level - 1, parent_column)
-            parent.append_child(sibling_index)
-        return AugmentedITreeNode(self.level, sibling_index, self.tree)
+        return (self.level, sibling_index)
 
     def remove_child(self, parent_index, child_index):
         """TODO: Docstring for remove_child.
@@ -135,7 +120,7 @@ class ITreeMatrix(object):
     def __init__(self, levels=1):
         if levels < 0:
             raise ValueError('rows must be positive')
-        self.levels = [ITreeRow(i, self) for i in range(levels)]
+        self.levels = [ITreeRow(i) for i in range(levels)]
 
     def __getitem__(self, slices):
         return self.levels[slices]
@@ -146,7 +131,7 @@ class ITreeMatrix(object):
     def __iter__(self):
         for level_index, level in enumerate(self.levels):
             for sibling_index, node in enumerate(level):
-                yield self[level_index][sibling_index]
+                yield self.levels[level_index][sibling_index]
 
     def __str__(self):
         return '\n'.join(','.join(map(str, nodes)) for nodes in self.levels)
@@ -172,14 +157,14 @@ class ITreeMatrix(object):
     def set_root(self, data):
         # suppose root node exists and we change the value
         try:
-            self.get_node(0, 0).data = data
-            root = self[0][0]
+            self.levels[0][0].data = data
+            return (0, 0)
         except IndexError:
             # node doesn't exist so we create it
             # the parent of root is outside the matrix
             # using -1 here lets us use append_child as if (-1, -1) existed
-            root = self.append_child(data, -1, -1)
-        return root
+            level_index, sibling_index = self.append_child(data, -1, -1)
+        return (level_index, sibling_index)
 
     def append_child(self, data, parent_row, parent_column):
         """append child to row that contains its siblings and cousins"""
@@ -189,13 +174,19 @@ class ITreeMatrix(object):
         # the level doesn't exist so we need to create it
         # this is an only child (no cousins either)
         except IndexError:
-            self.levels.append(ITreeRow(child_row, self))
+            self.levels.append(ITreeRow(child_row))
             child_level = self.levels[child_row]
-        child = child_level.append_child(data, parent_column)
-        return child
+        level_index, sibling_index = child_level.append_child(data, parent_column)
+        # remember to add child to the parents children list
+        # if the node has parents - negative indices correspond to no parents
+        if parent_row >= 0:
+            parent = self.levels[parent_row][parent_column]
+            parent.append_child(sibling_index)
+        # return the indices of the added node
+        return (level_index, sibling_index)
 
     def remove_node(self, row, column):
-        node = self.get_node(row, column)
+        node = self.levels[row][column]
         if len(node.children_indices) != 0:
             raise ITreeError("cannot delete a node which has children")
         parent_row = row - 1
@@ -211,8 +202,5 @@ class ITreeMatrix(object):
             self.levels.pop(row)
         return removed
 
-    def get_node(self, row, column):
-        return self.levels[row].get_node(column)
-
     def add_row(self):
-        self.levels.append(ITreeRow(self.height, self))
+        self.levels.append(ITreeRow(self.height))
