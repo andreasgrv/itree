@@ -35,7 +35,12 @@ class ITree(object):
     @property
     def height(self):
         """get distance from root to lowest leaf"""
-        self.tree.height
+        return self.tree.height
+
+    @property
+    def depth(self):
+        """get distance from root to lowest leaf"""
+        return self.tree.depth
 
     @property
     def root(self):

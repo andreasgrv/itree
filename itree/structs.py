@@ -103,7 +103,7 @@ class ITreeRow(list):
         :returns: TODO
 
         """
-        self[parent_index].node.remove_child(child_index)
+        self[parent_index].remove_child(child_index)
         # since the sibling_index must be a consecutive number with no gaps
         # we need to lower the indices by one for all the succeeding nodes
         for parent_node in self[parent_index+1:]:
