@@ -2,26 +2,148 @@
 from structs import ITreeMatrix, ITreeError
 
 
+class AugmentedITreeNode(object):
+
+    """API for ITree structure - I tried to focus on simplicity of use.
+    this object is usable as a node object but has access to more information
+    about the actual tree through the tree variable - reference"""
+
+    def __init__(self, level_index, sibling_index, tree):
+        """TODO: to be defined1.
+
+        :node: TODO
+        :level_index: TODO
+        :sibling_index: TODO
+
+        """
+        self.level_index = level_index
+        self.sibling_index = sibling_index
+        self.tree = tree
+        # below solution to extending the node is clearly overkill
+        # reasons:
+        # a) unclear why a user of itree would expect such behaviour
+        # b) blurs the lines between the node as a container and the data
+        # c) probably expensive computationally
+        # # append all non private stuff to augmented node
+        # try:
+        #     for key, value in self.node.data.__class__.__dict__.items():
+        #         if not key.startswith('_'):
+        #             if key in self.__class__.__dict__:
+        #                 setattr(self.__class__, '_%s' % key, value)
+        #             else:
+        #                 setattr(self.__class__, key, value)
+        #     # append all non private variables to augmented node
+        #     for key, value in self.node.data.__dict__.items():
+        #         if not key.startswith('_'):
+        #             if key in self.__dict__:
+        #                 setattr(self, '_%s' % key, value)
+        #             else:
+        #                 setattr(self, key, value)
+        # except Exception:
+        #     pass
+
+    def __repr__(self):
+        return '%s at (%s, %s)' % (self.node,
+                                   self.level_index,
+                                   self.sibling_index)
+
+    def __str__(self):
+        return '%s at (%s, %s)' % (self.node,
+                                   self.level_index,
+                                   self.sibling_index)
+
+    def __call__(self, *indices):
+        level_index, sibling_index = indices[:2]
+        # check it exists
+        self.tree[level_index][sibling_index]
+        return self.__class__(level_index, sibling_index, self.tree)
+
+    def __getitem__(self, indices):
+        level_index, sibling_index = indices
+        # check it exists
+        self.tree[level_index][sibling_index]
+        return self.__class__(level_index, sibling_index, self.tree)
+
+    @property
+    def index(self):
+        return (self.level_index, self.sibling_index)
+
+    @property
+    def height(self):
+        """how far from the root this node is"""
+        return (self.level_index)
+
+    @property
+    def width(self):
+        """how far from the farmost left node this node is"""
+        return (self.sibling_index)
+
+    @property
+    def node(self):
+        return self.tree[self.level_index][self.sibling_index]
+
+    @property
+    def data(self):
+        return self.node.data
+
+    @property
+    def children(self):
+        return [self.__class__(self.level_index+1, sibling_index, self.tree)
+                for sibling_index in self.node.children_indices]
+
+    @property
+    def parent(self):
+        parent_index = self.node.parent_index
+        return self.__class__(self.level_index-1, parent_index, self.tree)
+
+    @property
+    def siblings(self):
+        pass
+        # return self.tree[self.level_index]
+
+    def append_child(self, data):
+        args = (data, self.level_index, self.sibling_index)
+        level_index, sibling_index = self.tree.append_child(*args)
+        return self.__class__(level_index, sibling_index, self.tree)
+
+    def add_sibling(self, data):
+        """TODO: Docstring for append_child.
+
+        :data: TODO
+        :returns: TODO
+
+        """
+        pass
+
+    def delete(self):
+        """TODO: Docstring for delete.
+        :returns: TODO
+
+        """
+        self.tree.remove_node(self.level_index, self.sibling_index)
+
+
 class ITree(object):
 
     """API for ITree structure - I tried to focus on simplicity of use.
     this object is usable as a node object but has access to more information
     about the actual tree through the tree instance variable"""
 
-    def __init__(self, tree=None):
+    def __init__(self, tree=None, node_class=AugmentedITreeNode):
         self.tree = tree or ITreeMatrix()
+        self.node_class = node_class
 
     def __getitem__(self, indices):
         level_index, sibling_index = indices
         # check it exists
         self.tree[level_index][sibling_index]
-        return AugmentedITreeNode(level_index, sibling_index, self.tree)
+        return self.node_class(level_index, sibling_index, self.tree)
 
     def __call__(self, *indices):
         level_index, sibling_index = indices[:2]
         # check it exists
         self.tree[level_index][sibling_index]
-        return AugmentedITreeNode(level_index, sibling_index, self.tree)
+        return self.node_class(level_index, sibling_index, self.tree)
 
     def __repr__(self):
         return repr(self.tree)
@@ -47,7 +169,7 @@ class ITree(object):
         """get this tree's root"""
         # check it exists
         self.tree.root
-        return AugmentedITreeNode(0, 0, self.tree)
+        return self.node_class(0, 0, self.tree)
 
     @property
     def children(self):
@@ -57,14 +179,14 @@ class ITree(object):
     def set_root(self, data):
         """creates and appends the root of the tree."""
         level_index, sibling_index = self.tree.set_root(data)
-        return AugmentedITreeNode(level_index, sibling_index, self.tree)
+        return self.node_class(level_index, sibling_index, self.tree)
 
     def append_child(self, data):
         """creates and appends the root of the tree - alias for set_root.
         exists to follow naming convention with nodes to assist in cases
         where recursion is required"""
         level_index, sibling_index = self.tree.set_root(data)
-        return AugmentedITreeNode(level_index, sibling_index, self.tree)
+        return self.node_class(level_index, sibling_index, self.tree)
 
     def to_nested_list(self):
         """convert this itree to a nested list"""
@@ -125,125 +247,9 @@ class ITree(object):
         if len(multi_list) > 2:
             raise ITreeError('this list represents a bush not a tree '
                              ' - it has many roots')
-        t = ITree()
+        t = cls()
         recursively_append(multi_list, t)
         return t
-
-
-class AugmentedITreeNode(object):
-
-    """API for ITree structure - I tried to focus on simplicity of use.
-    this object is usable as a node object but has access to more information
-    about the actual tree through the tree variable - reference"""
-
-    def __init__(self, level_index, sibling_index, tree):
-        """TODO: to be defined1.
-
-        :node: TODO
-        :level_index: TODO
-        :sibling_index: TODO
-
-        """
-        self.level_index = level_index
-        self.sibling_index = sibling_index
-        self.tree = tree
-        # append all non private stuff to augmented node
-        try:
-            for key, value in self.node.data.__class__.__dict__.items():
-                if not key.startswith('_'):
-                    if key in self.__class__.__dict__:
-                        setattr(self.__class__, '_%s' % key, value)
-                    else:
-                        setattr(self.__class__, key, value)
-            # append all non private variables to augmented node
-            for key, value in self.node.data.__dict__.items():
-                if not key.startswith('_'):
-                    if key in self.__dict__:
-                        setattr(self, '_%s' % key, value)
-                    else:
-                        setattr(self, key, value)
-        except Exception:
-            pass
-
-    def __repr__(self):
-        return '%s at (%s, %s)' % (self.node,
-                                   self.level_index,
-                                   self.sibling_index)
-
-    def __str__(self):
-        return '%s at (%s, %s)' % (self.node,
-                                   self.level_index,
-                                   self.sibling_index)
-
-    def __call__(self, *indices):
-        level_index, sibling_index = indices[:2]
-        # check it exists
-        self.tree[level_index][sibling_index]
-        return AugmentedITreeNode(level_index, sibling_index, self.tree)
-
-    def __getitem__(self, indices):
-        level_index, sibling_index = indices
-        # check it exists
-        self.tree[level_index][sibling_index]
-        return AugmentedITreeNode(level_index, sibling_index, self.tree)
-
-    @property
-    def index(self):
-        return (self.level_index, self.sibling_index)
-
-    @property
-    def height(self):
-        """how far from the root this node is"""
-        return (self.level_index)
-
-    @property
-    def width(self):
-        """how far from the farmost left node this node is"""
-        return (self.sibling_index)
-
-    @property
-    def node(self):
-        return self.tree[self.level_index][self.sibling_index]
-
-    @property
-    def data(self):
-        return self.node.data
-
-    @property
-    def children(self):
-        return [AugmentedITreeNode(self.level_index+1, sibling_index, self.tree)
-                for sibling_index in self.node.children_indices]
-
-    @property
-    def parent(self):
-        parent_index = self.node.parent_index
-        return AugmentedITreeNode(self.level_index-1, parent_index, self.tree)
-
-    @property
-    def siblings(self):
-        pass
-        # return self.tree[self.level_index]
-
-    def append_child(self, data):
-        args = (data, self.level_index, self.sibling_index)
-        level_index, sibling_index = self.tree.append_child(*args)
-        return AugmentedITreeNode(level_index, sibling_index, self.tree)
-
-    def add_sibling(self, data):
-        """TODO: Docstring for append_child.
-
-        :data: TODO
-        :returns: TODO
-
-        """
-        pass
-
-    def delete(self):
-        """TODO: Docstring for delete.
-        :returns: TODO
-
-        """
-        self.tree.remove_node(self.level_index, self.sibling_index)
 
 
 if __name__ == "__main__":
