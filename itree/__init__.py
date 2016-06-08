@@ -61,9 +61,16 @@ class AugmentedITreeNode(object):
         :returns: node_class instance - api wrapped ITreeNode
 
         """
-        level_index, sibling_index = indices[:2]
-        # check if node exists
-        self.tree[level_index][sibling_index]
+        try:
+            level_index, sibling_index = indices[:2]
+            # check if node exists
+            self.tree[level_index][sibling_index]
+        except (ValueError, TypeError):
+            raise ITreeError('%s is not a valid ITree index, '
+                             '(level, width) expected' % indices)
+        except IndexError:
+            raise ITreeError("(%s, %s) doesn't reference a valid ITreeNode"
+                             % (level_index, sibling_index))
         # use self.__class__ to support extending this class using inheritance
         # we don't return the value of the node, we keep the information
         # needed to access it when we have to
@@ -78,9 +85,16 @@ class AugmentedITreeNode(object):
         :returns: node_class instance - api wrapped ITreeNode
 
         """
-        level_index, sibling_index = indices
-        # check if node exists
-        self.tree[level_index][sibling_index]
+        try:
+            level_index, sibling_index = indices
+            # check if node exists
+            self.tree[level_index][sibling_index]
+        except TypeError:
+            raise ITreeError('%s is not a valid ITree index, '
+                             '(level, width) expected' % indices)
+        except IndexError:
+            raise ITreeError("(%s, %s) doesn't reference a valid ITreeNode"
+                             % (level_index, sibling_index))
         # use self.__class__ to support extending this class using inheritance
         # we don't return the value of the node, we keep the information
         # needed to access it when we have to
@@ -202,9 +216,16 @@ class ITree(object):
         :returns: node_class instance - api wrapped ITreeNode
 
         """
-        level_index, sibling_index = indices[:2]
-        # check if node exists
-        self.tree[level_index][sibling_index]
+        try:
+            level_index, sibling_index = indices[:2]
+            # check if node exists
+            self.tree[level_index][sibling_index]
+        except (ValueError, TypeError):
+            raise ITreeError('%s is not a valid ITree index, '
+                             '(level, width) expected' % indices)
+        except IndexError:
+            raise ITreeError("(%s, %s) doesn't reference a valid ITreeNode"
+                             % (level_index, sibling_index))
         # use self.__class__ to support extending this class using inheritance
         # we don't return the value of the node, we keep the information
         # needed to access it when we have to
@@ -219,9 +240,16 @@ class ITree(object):
         :returns: node_class instance - api wrapped ITreeNode
 
         """
-        level_index, sibling_index = indices
-        # check if node exists
-        self.tree[level_index][sibling_index]
+        try:
+            level_index, sibling_index = indices
+            # check if node exists
+            self.tree[level_index][sibling_index]
+        except TypeError:
+            raise ITreeError('%s is not a valid ITree index, '
+                             '(level, width) expected' % indices)
+        except IndexError:
+            raise ITreeError("(%s, %s) doesn't reference a valid ITreeNode"
+                             % (level_index, sibling_index))
         # use self.__class__ to support extending this class using inheritance
         # we don't return the value of the node, we keep the information
         # needed to access it when we have to

@@ -42,6 +42,36 @@ def test_indexing_children():
     should_be_kitten_node = tree[2, 0]
     assert should_be_kitten_node.data == 'kitten'
 
+def test_indexing_imaginary_children():
+    tree = ITree()
+    tree.append_child('dog')
+    tree.root.append_child('cat')
+    mouse = tree.root.append_child('mouse')
+    with pytest.raises(ITreeError) as ex:
+        shouldnt_be_cat_node = mouse[66, 0]
+    with pytest.raises(ITreeError) as ex:
+        shouldnt_be_cat_node = mouse(66, 0)
+    with pytest.raises(ITreeError) as ex:
+        shouldnt_be_cat_node = mouse(0)
+    with pytest.raises(ITreeError) as ex:
+        shouldnt_be_cat_node = mouse[0]
+    assert(mouse(1, 0, 3, 4).data == 'cat')
+
+def test_indexing_root_imaginary_children():
+    tree = ITree()
+    tree.append_child('dog')
+    tree.root.append_child('cat')
+    tree.root.append_child('mouse')
+    with pytest.raises(ITreeError) as ex:
+        shouldnt_be_cat_node = tree[66, 0]
+    with pytest.raises(ITreeError) as ex:
+        shouldnt_be_cat_node = tree(66, 0)
+    with pytest.raises(ITreeError) as ex:
+        shouldnt_be_cat_node = tree(0)
+    with pytest.raises(ITreeError) as ex:
+        shouldnt_be_cat_node = tree[0]
+    assert(tree(1, 0, 3, 4).data == 'cat')
+
 def test_deleting_non_leaf():
     tree = ITree()
     tree.append_child('dog')
@@ -58,7 +88,7 @@ def test_deleting_leaf():
     should_be_cat_node = tree[1, 0]
     should_be_cat_node.delete()
     assert(len(tree) == 1)
-    with pytest.raises(IndexError) as e:
+    with pytest.raises(ITreeError) as e:
         cat = tree[1, 0]
 
 def test_deleting_root():
