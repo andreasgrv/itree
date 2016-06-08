@@ -4,16 +4,16 @@ from structs import ITreeMatrix, ITreeError
 
 class AugmentedITreeNode(object):
 
-    """API for ITree structure - I tried to focus on simplicity of use.
+    """ITreeNode extended with extra information about the tree.
     this object is usable as a node object but has access to more information
-    about the actual tree through the tree variable - reference"""
+    about the actual tree through the tree variable - reference."""
 
     def __init__(self, level_index, sibling_index, tree):
-        """TODO: to be defined1.
+        """
 
-        :node: TODO
-        :level_index: TODO
-        :sibling_index: TODO
+        :level_index: int - height in the tree, what level this node is on
+        :sibling_index: int - the index of the node on this level
+        :tree: ITreeMatrix - the tree implementation (a list of lists)
 
         """
         self.level_index = level_index
@@ -53,96 +53,178 @@ class AugmentedITreeNode(object):
                                    self.sibling_index)
 
     def __call__(self, *indices):
+        """get itree node at indices (level, left_index). people who use matlab
+        and octave will love me
+
+        :indices: level, left_index indices to get referenced node
+        if you pass more than two indices they will be ignored.
+        :returns: node_class instance - api wrapped ITreeNode
+
+        """
         level_index, sibling_index = indices[:2]
-        # check it exists
+        # check if node exists
         self.tree[level_index][sibling_index]
+        # use self.__class__ to support extending this class using inheritance
+        # we don't return the value of the node, we keep the information
+        # needed to access it when we have to
         return self.__class__(level_index, sibling_index, self.tree)
 
     def __getitem__(self, indices):
+        """get itree node at indices [level, left_index]. python style getter,
+        people who use pandas will love me (what are the odds that someone
+        reading this comment actually uses real live animal pandas?)
+
+        :indices: level, left_index indices to get referenced node
+        :returns: node_class instance - api wrapped ITreeNode
+
+        """
         level_index, sibling_index = indices
-        # check it exists
+        # check if node exists
         self.tree[level_index][sibling_index]
+        # use self.__class__ to support extending this class using inheritance
+        # we don't return the value of the node, we keep the information
+        # needed to access it when we have to
         return self.__class__(level_index, sibling_index, self.tree)
 
     @property
     def index(self):
+        """get the indices that refer to this node as a tuple
+
+        :returns: tuple - (level, left_index)
+        """
         return (self.level_index, self.sibling_index)
 
     @property
     def height(self):
-        """how far from the root this node is"""
+        """get level index
+
+        :returns: int - how far from the root this node is
+        """
         return (self.level_index)
 
     @property
     def width(self):
-        """how far from the farmost left node this node is"""
+        """get sibling index
+
+        :returns: int - how far from the farmost left node on this level
+        this node is
+        """
         return (self.sibling_index)
 
     @property
     def node(self):
+        """get the real node - the implementation
+
+        :returns: ITreeNode - the node this proxy object references
+        """
         return self.tree[self.level_index][self.sibling_index]
 
     @property
     def data(self):
+        """get the data of this node
+
+        :returns: YouKnowWhatTypeSinceYouPutItHere - the data you stored in
+        the node
+        """
         return self.node.data
 
     @property
     def children(self):
+        """get the children of this node as a list
+
+        :returns: list - of proxy objects of this class or subclass you made
+        """
         return [self.__class__(self.level_index+1, sibling_index, self.tree)
                 for sibling_index in self.node.children_indices]
 
     @property
     def parent(self):
+        """get the parent of this node
+
+        :returns: AugmentedITreeNode - or subclass you made wrapping the
+        parent ITreeNode
+        """
         parent_index = self.node.parent_index
         return self.__class__(self.level_index-1, parent_index, self.tree)
 
     @property
     def siblings(self):
-        pass
-        # return self.tree[self.level_index]
+        # TODO: guess what..
+        raise NotImplemented
 
     def append_child(self, data):
+        """create and append a child node to this node in the tree setting
+        its data to :data:. returns the newly created node wrapped in this
+        proxy object for ease of use.
+
+        :data: YouKnowWhatTypeSinceYouPutItHere - your data
+        :returns: AugmentedITreeNode - or subclass you made wrapping the
+        newly created ITreeNode
+        """
         args = (data, self.level_index, self.sibling_index)
         level_index, sibling_index = self.tree.append_child(*args)
         return self.__class__(level_index, sibling_index, self.tree)
 
     def add_sibling(self, data):
-        """TODO: Docstring for append_child.
-
-        :data: TODO
-        :returns: TODO
-
-        """
-        pass
+        # TODO: guess what..
+        raise NotImplemented
 
     def delete(self):
-        """TODO: Docstring for delete.
-        :returns: TODO
-
-        """
+        """delete this node. only allowed if this node doesn't have children"""
         self.tree.remove_node(self.level_index, self.sibling_index)
 
 
 class ITree(object):
 
-    """API for ITree structure - I tried to focus on simplicity of use.
-    this object is usable as a node object but has access to more information
-    about the actual tree through the tree instance variable"""
+    """indexable tree api class. use this class to construct an itree, you will
+    probably never need to use it again. if you wish to add extra functionality
+    don't forget to set node_class"""
 
     def __init__(self, tree=None, node_class=AugmentedITreeNode):
+        """
+
+        :tree: ITreeMatrix - internal tree structure incase we want to
+        construct an ITree from an existing one (useful for cloning probably)
+        :node_class: type - subclass of AugmentedITreeNode, used for wrapping
+        ITreeNode and encompassing custom functionality. set this if you want
+        to add custom functionality to your tree.
+
+        """
         self.tree = tree or ITreeMatrix()
         self.node_class = node_class
 
-    def __getitem__(self, indices):
-        level_index, sibling_index = indices
-        # check it exists
+    def __call__(self, *indices):
+        """get itree node at indices (level, left_index). people who use matlab
+        and octave will love me
+
+        :indices: level, left_index indices to get referenced node
+        if you pass more than two indices they will be ignored.
+        :returns: node_class instance - api wrapped ITreeNode
+
+        """
+        level_index, sibling_index = indices[:2]
+        # check if node exists
         self.tree[level_index][sibling_index]
+        # use self.__class__ to support extending this class using inheritance
+        # we don't return the value of the node, we keep the information
+        # needed to access it when we have to
         return self.node_class(level_index, sibling_index, self.tree)
 
-    def __call__(self, *indices):
-        level_index, sibling_index = indices[:2]
-        # check it exists
+    def __getitem__(self, indices):
+        """get itree node at indices [level, left_index]. python style getter,
+        people who use pandas will love me (what are the odds that someone
+        reading this comment actually uses real live animal pandas?)
+
+        :indices: level, left_index indices to get referenced node
+        :returns: node_class instance - api wrapped ITreeNode
+
+        """
+        level_index, sibling_index = indices
+        # check if node exists
         self.tree[level_index][sibling_index]
+        # use self.__class__ to support extending this class using inheritance
+        # we don't return the value of the node, we keep the information
+        # needed to access it when we have to
         return self.node_class(level_index, sibling_index, self.tree)
 
     def __repr__(self):
@@ -152,6 +234,7 @@ class ITree(object):
         return str(self.tree)
 
     def __len__(self):
+        """get number of nodes in this tree"""
         return len(self.tree)
 
     @property
@@ -173,7 +256,10 @@ class ITree(object):
 
     @property
     def children(self):
-        """get children nodes"""
+        """get the children of root node as a list
+
+        :returns: list - of proxy objects of this class or subclass you made
+        """
         return self.root.children
 
     def set_root(self, data):
@@ -215,7 +301,7 @@ class ITree(object):
         return recursively_nest(self.root)
 
     @classmethod
-    def from_nested_list(cls, multi_list):
+    def from_nested_list(cls, multi_list, *args, **kwargs):
         """create an itree from a nested list"""
         def recursively_append(l, node):
             child = None
@@ -247,7 +333,7 @@ class ITree(object):
         if len(multi_list) > 2:
             raise ITreeError('this list represents a bush not a tree '
                              ' - it has many roots')
-        t = cls()
+        t = cls(*args, **kwargs)
         recursively_append(multi_list, t)
         return t
 
