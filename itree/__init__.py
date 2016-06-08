@@ -1,5 +1,5 @@
 """ itree api """
-from structs import ITreeMatrix, ITreeError
+from itree.structs import ITreeMatrix, ITreeError
 
 
 class AugmentedITreeNode(object):

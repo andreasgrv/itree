@@ -1,5 +1,7 @@
 # i-tree
 
+[![Test Status](https://api.travis-ci.org/andreasgrv/itree.svg?branch=master)](https://travis-ci.org/andreasgrv/itree)
+
 disclaimer: you can't listen to songs on an i-tree
 
 ## what is it then?
