@@ -131,7 +131,7 @@ class ITreeMatrix(object):
     def __iter__(self):
         for level_index, level in enumerate(self.levels):
             for sibling_index, node in enumerate(level):
-                yield self.levels[level_index][sibling_index]
+                yield (level_index, sibling_index)
 
     def __str__(self):
         return '\n'.join(','.join(map(str, nodes)) for nodes in self.levels)

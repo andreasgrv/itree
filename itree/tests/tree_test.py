@@ -69,3 +69,12 @@ def test_deleting_root():
     assert(tree.height == 0)
     tree.set_root('b')
     assert(len(tree) == 1)
+
+def test_tree_builtin_traversal():
+    tree = ITree()
+    tree.append_child('dog')
+    tree.root.append_child('cat')
+    tree.root.append_child('mouse')
+    data = ['dog', 'cat', 'mouse']
+    traversal_data = [node.data for node in tree]
+    assert(data == traversal_data)

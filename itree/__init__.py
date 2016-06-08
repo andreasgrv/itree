@@ -237,6 +237,12 @@ class ITree(object):
         """get number of nodes in this tree"""
         return len(self.tree)
 
+    def __iter__(self):
+        """support iteration on tree - built in iteration is breadth first"""
+        # TODO support more ways of traversing the tree..
+        for level_index, sibling_index in self.tree:
+            yield self.node_class(level_index, sibling_index, self.tree)
+
     @property
     def height(self):
         """get distance from root to lowest leaf"""
