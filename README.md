@@ -16,6 +16,8 @@ index (width). Those two numbers should uniquely identify a node in the tree if 
 
 So here it is.
 
+![A 3 level itree](doc/itree.png?raw=true "A 3 level itree")
+
 ## how is it implemented?
 
 Well, it's pretty obvious that you might as well use an array of arrays of dynamic size to store the nodes.
