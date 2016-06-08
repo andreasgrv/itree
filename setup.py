@@ -7,14 +7,9 @@ setup(
         author='Andreas Grivas',
         author_email='andreasgrv@gmail.com',
         description='Indexable tree structure',
-        # url='https://github.com/andreasgrv/tictacs',
-        # download_url='https://github.com/andreasgrv/tictacs/tarball/0.0.3',
         license='BSD',
         keywords=['tree'],
         classifiers=[],
-        install_requires=[
-            # 'pyyaml',
-            ],
-        setup_requires=['pytest-runner'],
+        install_requires=[],
         tests_require=['pytest']
         )
