@@ -148,7 +148,7 @@ class AugmentedITreeNode(object):
 
         :returns: list - of proxy objects of this class or subclass you made
         """
-        return [self.__class__(self.level_index+1, sibling_index, self.tree)
+        return [self.__class__(self.level_index + 1, sibling_index, self.tree)
                 for sibling_index in self.node.children_indices]
 
     @property
@@ -159,7 +159,7 @@ class AugmentedITreeNode(object):
         parent ITreeNode
         """
         parent_index = self.node.parent_index
-        return self.__class__(self.level_index-1, parent_index, self.tree)
+        return self.__class__(self.level_index - 1, parent_index, self.tree)
 
     @property
     def siblings(self):
@@ -342,7 +342,7 @@ class ITree(object):
             for index in range(len(l)):
                 data = l[index]
                 # next data point (first item never a list in a valid tree)
-                next_data = l[(index+1) % len(l)]
+                next_data = l[(index + 1) % len(l)]
                 # if we find a list, it means the previous node
                 # has the list nodes as children
                 # we keep a reference to the previous node (child)

@@ -106,7 +106,7 @@ class ITreeRow(list):
         self[parent_index].remove_child(child_index)
         # since the sibling_index must be a consecutive number with no gaps
         # we need to lower the indices by one for all the succeeding nodes
-        for parent_node in self[parent_index+1:]:
+        for parent_node in self[parent_index + 1:]:
             parent_node.removed_sibling()
 
 
@@ -176,7 +176,8 @@ class ITreeMatrix(object):
         except IndexError:
             self.levels.append(ITreeRow(child_row))
             child_level = self.levels[child_row]
-        level_index, sibling_index = child_level.append_child(data, parent_column)
+        level_index, sibling_index = child_level.append_child(
+            data, parent_column)
         # remember to add child to the parents children list
         # if the node has parents - negative indices correspond to no parents
         if parent_row >= 0:
