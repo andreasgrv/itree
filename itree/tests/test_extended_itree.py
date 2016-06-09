@@ -1,4 +1,9 @@
-"""test adding itree functionality through inheritance"""
+"""test adding itree functionality through inheritance. the reason we have
+this test is because this is the way the itree can be extended. therefore
+we need to make sure we make no whoopsies and break extending functionality
+this way. we cannot control the ways other people will extend our class
+but we might as well make sure it works for the cases we have in mind
+and want to support"""
 from itree import ITree, AugmentedITreeNode
 
 
@@ -11,9 +16,9 @@ class MyExtendedTree(ITree):
 
     def say_hi(self):
         """this method is on the node, and not on the data.
-        check this works """
-        print("Hi, I'm a tree wooooo hwahahwa hwoooo waaaa hwoooo nibbit!"
-              " meet my nodes:")
+        check this works"""
+        print("Hi, I'm a tree wooooo hwahahwa hwoooo waaaa hwoooo nibbit! "
+              "Meet my nodes:")
         self.root.say_hi()
 
     @property
@@ -27,14 +32,14 @@ class MyExtendedNode(AugmentedITreeNode):
 
     def say_hi(self):
         """this method is on the node, and not on the data.
-        check this works """
+        check this works"""
         print(self.greeting)
         for child in self.children:
             child.say_hi()
 
     @property
     def greeting(self):
-        return "hi, I'm node: %s" % repr(self)
+        return "Hi, I'm node: %s" % repr(self)
 
     @property
     def sum(self):

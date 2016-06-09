@@ -1,6 +1,6 @@
-"""test itree structure"""
+"""basic itree unittests"""
 import pytest
-from itree import ITree, ITreeError
+from itree import ITree, ITreeError, utils
 
 def test_len():
     tree = ITree()
@@ -108,3 +108,17 @@ def test_tree_builtin_traversal():
     data = ['dog', 'cat', 'mouse']
     traversal_data = [node.data for node in tree]
     assert(data == traversal_data)
+
+def test_to_nested_list():
+    tree = ITree()
+    tree.append_child('dog')
+    tree.root.append_child('cat')
+    tree.root.append_child('mouse')
+    nested_list = tree.to_nested_list()
+    assert(nested_list == ['dog', ['cat', 'mouse']])
+
+def test_large_random_nested_list():
+    multi_list = [1, utils.generate_nested_list(400000, 100)]
+    tree = ITree.from_nested_list(multi_list)
+    list_from_tree = tree.to_nested_list()
+    assert(multi_list == list_from_tree)
