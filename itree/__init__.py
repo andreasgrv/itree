@@ -308,8 +308,19 @@ class ITree(object):
         level_index, sibling_index = self.tree.set_root(data)
         return self.node_class(level_index, sibling_index, self.tree)
 
-    def to_nested_list(self):
-        """convert this itree to a nested list"""
+    def to_nested_list(self, transformer=lambda x: x.data):
+        """convert this itree to a nested list
+
+        :transformer: callable - hook to override what to put in the nested
+        list for as a representative for each node. the callable is passed
+        the node as argument and sets the entries of the nested list to the
+        return value of the callable. default behaviour is to set the data
+        attribute of the node as the node representative.
+
+        :returns: list - a nested list that represents an itree in our
+        nested list format
+
+        """
 
         def collapse_one_level(l):
             """collapses contained lists of a list once (not recursive)"""
@@ -324,19 +335,38 @@ class ITree(object):
             """recurse into tree and nest children on the right of
             the parent in a list"""
             if node.children:
-                current = [node.data]
+                current = [transformer(node)]
                 nested_children = map(recursively_nest, node.children)
                 children = list(collapse_one_level(nested_children))
                 current.append(children)
                 return current
             else:
-                return node.data
+                return transformer(node)
 
         return recursively_nest(self.root)
 
     @classmethod
-    def from_nested_list(cls, multi_list, *args, **kwargs):
-        """create an itree from a nested list"""
+    def from_nested_list(cls, nested_list, *args, **kwargs):
+        """create an itree from a nested list itree format
+
+        :nested_list: list of lists that represent a tree in our itree format
+        :transformer: optional - defaults to lambda x: x - the identity lambda.
+        a callable which is given the data corresponding to each node in the
+        nested list as an argument and may modify it as it pleases. the node
+        data attribute is set to the return value of the transformer callable.
+        :args: positional arguments to pass to itree subclass constructor
+        :kwargs: keyword arguments to pass to itree subclass constructor
+
+        :returns: itree or itree subclass instance
+
+        """
+        # we can't add :transformer: as a default value to the argument list,
+        # since if we do and only a single positional argument is passed, it
+        # will be set with the value of that positional argument. we therefore
+        # expect it to be a keyword argument and if it doesn't exist, we set it
+        # to our default value
+        transformer = kwargs.pop('transformer', lambda x: x)
+
         def recursively_append(l, node):
             child = None
             for index in range(len(l)):
@@ -359,16 +389,16 @@ class ITree(object):
                     # if next element is a list, this node has children
                     # we need to keep a reference to it to pass to recursion
                     if isinstance(next_data, list):
-                        child = node.append_child(data)
+                        child = node.append_child(transformer(data))
                     # no children - don't need to keep reference
                     else:
-                        node.append_child(data)
+                        node.append_child(transformer(data))
 
-        if len(multi_list) > 2:
+        if len(nested_list) > 2:
             raise ITreeError('this list represents a bush not a tree '
                              ' - it has many roots')
         t = cls(*args, **kwargs)
-        recursively_append(multi_list, t)
+        recursively_append(nested_list, t)
         return t
 
 
